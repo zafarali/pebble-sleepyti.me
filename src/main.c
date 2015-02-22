@@ -11,7 +11,7 @@ MenuLayer *m_time_list;
 // time taken to fall asleep in seconds
 const int FALL_ASLEEP_TIME = 840;
 int wakeytimes[] = {0, 0, 0, 0, 0, 0 };
-
+int selectedwakeup = 0;
 ///
 /// L O G I C    F O R
 /// C A L C U L A T I N G   B E S T   W A K E   U P   T I M E
@@ -28,7 +28,27 @@ void wakeytimecalculate(void){
   
 }
 
-
+struct tm * parseEpoch(int epoch_time) {
+    time_t c;
+    static struct tm * timeinfo;
+    time_t epoch_time_as_time_t = epoch_time;
+    timeinfo = localtime(&epoch_time_as_time_t);
+    return timeinfo;
+}
+  
+char* parseWakeyIndex(int index) {
+  static char buffer[] = "00:00AA";
+  
+  struct tm* timeinfo = parseEpoch(wakeytimes[index]);    
+  
+  if (clock_is_24h_style() == true) {
+    strftime(buffer, sizeof(buffer), "%H:%M", timeinfo);
+  } else {
+    strftime(buffer, sizeof(buffer), "%I:%M%p", timeinfo);
+  }
+  
+  return buffer;
+}
 
 
 ///
@@ -39,27 +59,28 @@ void wakeytimecalculate(void){
 void draw_row_callback(GContext *context, Layer *cell_layer, MenuIndex *cell_index, void *callback_context) {
 
   int index = cell_index->row;    
-  char buffer[] = "0sadihfbasudbfi";
-//   snprintf(buffer, sizeof(buffer), "%d", index);
-//   char* epochtime = wakey(index);
+//   char buffer[] = "0sadihfbasudbfi";
   
-  time_t c;
-  int curtime = wakeytimes[index];    
-  struct tm * timeinfo;
+//   time_t c;
+//   int curtime = wakeytimes[index];    
+//   struct tm * timeinfo;
   
-  time_t epoch_time_as_time_t = curtime;
-  timeinfo = localtime(&epoch_time_as_time_t);
+//   time_t epoch_time_as_time_t = curtime;
+//   timeinfo = localtime(&epoch_time_as_time_t);
 
-  //struct tm humantime = localtime(time(epochtime));
+//   //struct tm humantime = localtime(time(epochtime));
   
-  if (clock_is_24h_style() == true) {
-    strftime(buffer, sizeof(buffer), "%H:%M", timeinfo);
-  } else {
-    strftime(buffer, sizeof(buffer), "%I:%M%p", timeinfo);
-  }
-  
-  
-  menu_cell_basic_draw(context, cell_layer, buffer , NULL, NULL);
+//   if (clock_is_24h_style() == true) {
+//     strftime(buffer, sizeof(buffer), "%H:%M", timeinfo);
+//   } else {
+//     strftime(buffer, sizeof(buffer), "%I:%M%p", timeinfo);
+//   }
+  char* buffer;
+  buffer = parseWakeyIndex(index);
+  char buffer2[] = "0 cycles";
+  int cycle_number = ARRAY_LENGTH(wakeytimes)-index;
+  snprintf(buffer2, 12, "%d cycle (s)", cycle_number);
+  menu_cell_basic_draw(context, cell_layer, buffer , buffer2, NULL);
 //   printf("%s\n", buffer);  
     
   
@@ -88,7 +109,9 @@ void select_click_callback(MenuLayer *menu_layer, MenuIndex *cell_index, void *c
     .num_segments = 16
   };
   
-  vibes_enqueue_custom_pattern(pattern);
+  vibes_enqueue_custom_pattern(pattern);  
+  selectedwakeup = which;
+  menu_layer_destroy(m_time_list);
 }
 
 ///
@@ -146,7 +169,7 @@ static void select_click_handler(ClickRecognizerRef recognizer, void *context) {
   vibes_double_pulse();
 }
 
-// subscribers
+//subscribers
 void click_config_provider(void *context) {
   window_single_click_subscribe(BUTTON_ID_UP, up_click_handler);
   window_single_click_subscribe(BUTTON_ID_SELECT, select_click_handler);
