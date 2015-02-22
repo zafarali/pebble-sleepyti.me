@@ -78,8 +78,22 @@ char* parse_time_t(time_t *timestamp){
 static void wakeup_handler(WakeupId id, int32_t reason) {
   //wake up event occured must do something....
   text_layer_set_text(tl_message, "Wakey wakey!");
-  
   persist_delete(PERSIST_WAKEUP_ID_KEY);
+    
+  
+  
+    uint32_t segments[] = {200,100,200,100,200,100,200,100,200,100,200,100};
+  
+    
+    VibePattern pattern = {
+      .durations = segments,
+      .num_segments = ARRAY_LENGTH(segments)
+    };
+    
+    vibes_enqueue_custom_pattern(pattern); 
+  
+  
+  
 }
 
 ///
