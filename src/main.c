@@ -40,7 +40,7 @@ struct tm * parseEpoch(int epoch_time) {
     return timeinfo;
 }
   
-char* parseWakeyIndex(int index) {
+  char* parseWakeyIndex(int index) {
   static char buffer[] = "00:00AA";
   
   struct tm* timeinfo = parseEpoch(wakeytimes[index]);    
@@ -52,6 +52,20 @@ char* parseWakeyIndex(int index) {
   }
   
   return buffer;
+}
+
+char* parse_time_t(time_t *timestamp){
+    static struct tm* timeinfo;
+    timeinfo = localtime(timestamp);
+  
+    static char timebuffer[]= "123456879";
+    if (clock_is_24h_style() == true) {
+      strftime(timebuffer, sizeof(timebuffer), "%H:%M", timeinfo);
+    } else {
+      strftime(timebuffer, sizeof(timebuffer), "%I:%M%p", timeinfo);
+    }
+  
+    return timebuffer;
 }
 
 
@@ -188,7 +202,13 @@ void select_click_callback(MenuLayer *menu_layer, MenuIndex *cell_index, void *c
     
     wakeup_query(s_wakeup_id, &when);
     
-    text_layer_set_text(tl_message, "You will be woken up!");  
+    
+    static char buffer2[32];
+    char* timebuffer = parse_time_t(&when);
+    
+    snprintf(buffer2, 32, "You will be woken up at %s", timebuffer);
+    
+    text_layer_set_text(tl_message, buffer2);  
   }
   
 }
