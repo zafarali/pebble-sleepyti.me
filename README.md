@@ -1,7 +1,5 @@
 # Sleepyti.me for Pebble
-*Say good-bye to groggy mornings*
-
-[ChallengePost](http://challengepost.com/software/sleepyti-me-for-pebble)
+*Say good-bye to groggy mornings ~ Created for McHacks 2015 -[ChallengePost](http://challengepost.com/software/sleepyti-me-for-pebble)*
 
 As an sleep cycle enthusiast, the web app sleepyti.me has become the number one app to use before bed. It calculates the optimal REM cycles and suggests times for you to wake up. This is perfect for a Pebble App!
 
