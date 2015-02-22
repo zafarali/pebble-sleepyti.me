@@ -8,6 +8,9 @@ Window *w_window;
 TextLayer *tl_message;
 MenuLayer *m_time_list;
 
+// time taken to fall asleep in seconds
+const int FALL_ASLEEP_TIME = 840;
+int wakeytimes[] = {0, 0, 0, 0, 0, 0 };
 
 ///
 /// L O G I C    F O R
@@ -15,6 +18,15 @@ MenuLayer *m_time_list;
 ///
 
 
+void wakeytimecalculate(void){
+  const time_t now = time(NULL);
+  
+  for(int i = ARRAY_LENGTH(wakeytimes); i > 0; i--) {
+    wakeytimes[ARRAY_LENGTH(wakeytimes)-i] = now + FALL_ASLEEP_TIME + (i * 90 * 60);
+    printf("%d\n", wakeytimes[ARRAY_LENGTH(wakeytimes)-i]);
+  }
+  
+}
 
 
 ///
@@ -24,18 +36,30 @@ MenuLayer *m_time_list;
 
 void draw_row_callback(GContext *context, Layer *cell_layer, MenuIndex *cell_index, void *callback_context) {
 
-  int index = cell_index->row;
-  char buffer[] = "0";
-  snprintf(buffer, sizeof(buffer), "%d", index);
+  int index = cell_index->row;    
+  char buffer[] = "0sadihfbasudbfi";
+//   snprintf(buffer, sizeof(buffer), "%d", index);
+//   char* epochtime = wakey(index);
   
-  menu_cell_basic_draw(context, cell_layer, buffer, NULL, NULL);
-    
+  time_t c;
+  int curtime = wakeytimes[index];    
+  struct tm * timeinfo;
+  
+  time_t epoch_time_as_time_t = curtime;
+  timeinfo = localtime(&epoch_time_as_time_t);
+
+  //struct tm humantime = localtime(time(epochtime));
+  
+  
+  strftime(buffer, sizeof(buffer), "%H:%M:%S", timeinfo);
+  menu_cell_basic_draw(context, cell_layer, buffer , NULL, NULL);
+  printf("%s\n", buffer);  
     
   
 }
 
 uint16_t num_rows_callback(MenuLayer *menu_layer, uint16_t section_index, void *callback_context) { 
-  return 4;
+  return 6;
 }
 
 void select_click_callback(MenuLayer *menu_layer, MenuIndex *cell_index, void *callback_context) {
@@ -71,10 +95,10 @@ static void window_load(Window *window) {
   tl_message = text_layer_create(GRect(0, 0, 144, 40));
   text_layer_set_text(tl_message, "Going to sleep now? Wake up at:");
   layer_add_child(window_get_root_layer(window), text_layer_get_layer(tl_message));
-  
+
   m_time_list = menu_layer_create(GRect(0,36,144, 120));
-  
   menu_layer_set_click_config_onto_window(m_time_list, w_window);
+  
   
   MenuLayerCallbacks callbacks = {
     .draw_row = (MenuLayerDrawRowCallback) draw_row_callback,
@@ -90,6 +114,7 @@ static void window_load(Window *window) {
 
 static void window_unload(Window *window) {
   menu_layer_destroy(m_time_list);
+  
 }
 
 ///
@@ -128,7 +153,8 @@ void click_config_provider(void *context) {
 //initialization handler
 void init(void) {
   w_window = window_create();
-
+  wakeytimecalculate();
+  printf("wakey times calculated");
   window_set_window_handlers(w_window, (WindowHandlers) {
     .load = window_load,
     .unload = window_unload
