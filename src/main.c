@@ -40,7 +40,8 @@ struct tm * parseEpoch(int epoch_time) {
     return timeinfo;
 }
   
-  char* parseWakeyIndex(int index) {
+
+char* parseWakeyIndex(int index) {
   static char buffer[] = "00:00AA";
   
   struct tm* timeinfo = parseEpoch(wakeytimes[index]);    
@@ -55,7 +56,7 @@ struct tm * parseEpoch(int epoch_time) {
 }
 
 char* parse_time_t(time_t *timestamp){
-    static struct tm* timeinfo;
+    struct tm* timeinfo;
     timeinfo = localtime(timestamp);
   
     static char timebuffer[]= "123456879";
