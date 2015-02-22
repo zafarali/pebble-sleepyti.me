@@ -201,7 +201,10 @@ void select_click_callback(MenuLayer *menu_layer, MenuIndex *cell_index, void *c
     int epochtime = wakeytimes[which];
     time_t when = epochtime;
     
-    wakeup_query(s_wakeup_id, &when);
+    time_t future_time = time(NULL) + 30;
+    
+    s_wakeup_id = wakeup_schedule(when, WAKEUP_REASON, s_wakeup_id);
+    persist_write_int(PERSIST_WAKEUP_ID_KEY, s_wakeup_id);
     
     
     static char buffer2[32];
@@ -224,9 +227,10 @@ void select_click_callback(MenuLayer *menu_layer, MenuIndex *cell_index, void *c
 static void window_load(Window *window) {
   tl_message = text_layer_create(GRect(0, 0, 144, 40));
   
-  s_wakeup_id = persist_read_int(PERSIST_WAKEUP_ID_KEY );
+  s_wakeup_id = persist_read_int(PERSIST_WAKEUP_ID_KEY);
   
   if( s_wakeup_id > 0 ) {
+    printf("wakeupid exists");
     time_t timestamp = 0;
     wakeup_query(s_wakeup_id, &timestamp);
     
