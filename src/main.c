@@ -1,6 +1,6 @@
 #include <pebble.h>
   
-#define WAKEUP_REASON 0
+     // #define WAKEUP_REASON 0
 #define PERSIST_WAKEUP_ID_KEY 15
   
   
@@ -36,7 +36,7 @@ void wakeytimecalculate(void){
 struct tm * parseEpoch(int epoch_time) {
     static struct tm * timeinfo;
     time_t epoch_time_as_time_t = epoch_time;
-    timeinfo = localtime(&epoch_time_as_time_t);
+     timeinfo = localtime(&epoch_time_as_time_t);
     return timeinfo;
 }
   
@@ -50,7 +50,6 @@ char* parseWakeyIndex(int index) {
     strftime(buffer, sizeof(buffer), "%H:%M", timeinfo);
   } else {
     strftime(buffer, sizeof(buffer), "%I:%M%p", timeinfo);
-  }
   
   return buffer;
 }
@@ -66,13 +65,13 @@ char* parse_time_t(time_t *timestamp){
       strftime(timebuffer, sizeof(timebuffer), "%I:%M%p", timeinfo);
     }
   
-    return timebuffer;
+ //       return timebuffer;
 }
 
 
-///
+ /////
 /// W A K E  U P 
-/// H A N D L E R
+             /// H A N D L E R
 ///
 
 static void wakeup_handler(WakeupId id, int32_t reason) {
@@ -87,14 +86,14 @@ static void wakeup_handler(WakeupId id, int32_t reason) {
 /// H A N D L E R S
 ///
 
-static void up_click_handler(ClickRecognizerRef recognizer, void *context) {
+                 static void up_click_handler(ClickRecognizerRef recognizer, void *context) {
   text_layer_set_text(tl_confirm_message, "PRESSED UP EH");
   uint32_t segments[] = {100, 200, 500, 1000, 500, 1000};
   
   VibePattern pattern = {
     .durations = segments,
     .num_segments = ARRAY_LENGTH(segments)
-  };
+          };
   
   vibes_enqueue_custom_pattern(pattern);
 }
@@ -108,7 +107,7 @@ static void select_click_handler(ClickRecognizerRef recognizer, void *context) {
 void click_config_provider(void *context) {
   window_single_click_subscribe(BUTTON_ID_UP, up_click_handler);
   window_single_click_subscribe(BUTTON_ID_SELECT, select_click_handler);
-}
+      }
 
 
 
@@ -126,8 +125,7 @@ static void window_confirm_load(Window *window) {
   text_layer_set_font(tl_confirm_time, FONT_KEY_GOTHIC_28_BOLD);
 
   char* buffer2 = parseWakeyIndex(selectedwakeup);
-  
-  // for some reason this text doesn't print on the screen!
+	  // for some reason this text doesn't print on the screen!
   text_layer_set_text(tl_confirm_message, "Are you sure you want to wake up at:");
   layer_add_child(window_get_root_layer(window), text_layer_get_layer(tl_confirm_message));
   printf("text layer tl_confirm_message was pushed");
@@ -146,7 +144,7 @@ static void window_confirm_unload(Window *window){
 ///
 /// M E N U 
 /// C A L L B A C K S
-///
+ /////
 
 void draw_row_callback(GContext *context, Layer *cell_layer, MenuIndex *cell_index, void *callback_context) {
 
@@ -163,7 +161,7 @@ void draw_row_callback(GContext *context, Layer *cell_layer, MenuIndex *cell_ind
   
 }
 
-uint16_t num_rows_callback(MenuLayer *menu_layer, uint16_t section_index, void *callback_context) { 
+//   uint16_t num_rows_callback(MenuLayer *menu_layer, uint16_t section_index, void *callback_context) { 
   return 6;
 }
 
@@ -179,14 +177,14 @@ void select_click_callback(MenuLayer *menu_layer, MenuIndex *cell_index, void *c
     segments[(2*i)+1] = 100;
   }
   
-  VibePattern pattern = {
+			VibePattern pattern = {
     .durations = segments,
     .num_segments = 16
   };
   
   vibes_enqueue_custom_pattern(pattern);  
   
-//   w_confirm = window_create();
+			//   w_confirm = window_create();
 //   window_set_window_handlers(w_confirm, (WindowHandlers) {
 //     .load = window_confirm_load,
 //     .unload = window_confirm_unload
@@ -196,14 +194,12 @@ void select_click_callback(MenuLayer *menu_layer, MenuIndex *cell_index, void *c
 //   window_set_click_config_provider(w_confirm, click_config_provider);
 //   window_stack_push(w_confirm, true);
 
-  if(!wakeup_query(s_wakeup_id, NULL)){
+              if(!wakeup_query(s_wakeup_id, NULL)){
     
     int epochtime = wakeytimes[which];
     time_t when = epochtime;
-    
     wakeup_query(s_wakeup_id, &when);
-    
-    
+				    
     static char buffer2[32];
     char* timebuffer = parse_time_t(&when);
     
@@ -229,10 +225,9 @@ static void window_load(Window *window) {
   if( s_wakeup_id > 0 ) {
     time_t timestamp = 0;
     wakeup_query(s_wakeup_id, &timestamp);
-    
-
+     
     static struct tm* timeinfo;
-    timeinfo = localtime(&timestamp);
+			timeinfo = localtime(&timestamp);
   
     char timebuffer[]= "123456879";
     if (clock_is_24h_style() == true) {
@@ -257,7 +252,6 @@ static void window_load(Window *window) {
   MenuLayerCallbacks callbacks = {
     .draw_row = (MenuLayerDrawRowCallback) draw_row_callback,
     .get_num_rows = (MenuLayerGetNumberOfRowsInSectionsCallback) num_rows_callback,
-    .select_click = (MenuLayerSelectCallback) select_click_callback
   };
   
   menu_layer_set_callbacks(m_time_list, NULL, callbacks);
@@ -269,12 +263,11 @@ static void window_load(Window *window) {
 static void window_unload(Window *window) {
     menu_layer_destroy(m_time_list);
     text_layer_destroy(tl_message);
-
-}
-
+			}
 
 
-///
+
+				///
 /// I N I T
 /// D E I N I T
 ///
@@ -284,14 +277,13 @@ void init(void) {
   w_window = window_create();
   wakeytimecalculate();
 //   printf("wakey times calculated");
-  window_set_window_handlers(w_window, (WindowHandlers) {
+					window_set_window_handlers(w_window, (WindowHandlers) {
     .load = window_load,
     .unload = window_unload
   });
   
   window_stack_push(w_window, true);
-  
-  wakeup_service_subscribe(wakeup_handler);
+         wakeup_service_subscribe(wakeup_handler);
   if(launch_reason() == APP_LAUNCH_WAKEUP) {
     WakeupId id = 0;
     int32_t reason = 0;
@@ -299,7 +291,7 @@ void init(void) {
     //handle the wake up
     wakeup_get_launch_event(&id, &reason);
     wakeup_handler(id, reason);
-  }
+}
 }
 
 //deinitialization handler
@@ -309,12 +301,11 @@ void deinit(void) {
   window_destroy(w_confirm);
 
 }
-
-
+              
 
 //main function
-int main(void) {
+              int main(void) {
   init();
   app_event_loop();
-  deinit();
+			deinit();
 }
