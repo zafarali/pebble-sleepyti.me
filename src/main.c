@@ -23,10 +23,12 @@ void wakeytimecalculate(void){
   
   for(int i = ARRAY_LENGTH(wakeytimes); i > 0; i--) {
     wakeytimes[ARRAY_LENGTH(wakeytimes)-i] = now + FALL_ASLEEP_TIME + (i * 90 * 60);
-    printf("%d\n", wakeytimes[ARRAY_LENGTH(wakeytimes)-i]);
+//     printf("%d\n", wakeytimes[ARRAY_LENGTH(wakeytimes)-i]);
   }
   
 }
+
+
 
 
 ///
@@ -50,10 +52,15 @@ void draw_row_callback(GContext *context, Layer *cell_layer, MenuIndex *cell_ind
 
   //struct tm humantime = localtime(time(epochtime));
   
+  if (clock_is_24h_style() == true) {
+    strftime(buffer, sizeof(buffer), "%H:%M", timeinfo);
+  } else {
+    strftime(buffer, sizeof(buffer), "%I:%M%p", timeinfo);
+  }
   
-  strftime(buffer, sizeof(buffer), "%H:%M:%S", timeinfo);
+  
   menu_cell_basic_draw(context, cell_layer, buffer , NULL, NULL);
-  printf("%s\n", buffer);  
+//   printf("%s\n", buffer);  
     
   
 }
@@ -154,7 +161,7 @@ void click_config_provider(void *context) {
 void init(void) {
   w_window = window_create();
   wakeytimecalculate();
-  printf("wakey times calculated");
+//   printf("wakey times calculated");
   window_set_window_handlers(w_window, (WindowHandlers) {
     .load = window_load,
     .unload = window_unload
