@@ -151,68 +151,85 @@ static void window_confirm_unload(Window *window){
 void draw_row_callback(GContext *context, Layer *cell_layer, MenuIndex *cell_index, void *callback_context) {
 
   int index = cell_index->row;    
-
-  char* buffer;
-  buffer = parseWakeyIndex(index);
-  char buffer2[] = "0 cycles";
-  int cycle_number = ARRAY_LENGTH(wakeytimes)-index;
-  snprintf(buffer2, 12, "%d cycle (s)", cycle_number);
-  menu_cell_basic_draw(context, cell_layer, buffer , buffer2, NULL);
+  if(index>5){
+    menu_cell_basic_draw(context, cell_layer, "Switch off alarm", "Switch off any alarms", NULL); 
+  }else{
+    char* buffer;
+    buffer = parseWakeyIndex(index);
+    char buffer2[] = "0 cycles";
+    int cycle_number = ARRAY_LENGTH(wakeytimes)-index;
+    snprintf(buffer2, 12, "%d cycle (s)", cycle_number);
+    menu_cell_basic_draw(context, cell_layer, buffer , buffer2, NULL);
 //   printf("%s\n", buffer);  
-    
+  }
   
 }
 
 uint16_t num_rows_callback(MenuLayer *menu_layer, uint16_t section_index, void *callback_context) { 
-  return 6;
+  return 7;
 }
 
 void select_click_callback(MenuLayer *menu_layer, MenuIndex *cell_index, void *callback_context) {
   int which = cell_index->row;
-  selectedwakeup = which;
   
-  
-  uint32_t segments[16] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-  
-  for(int i = 0; i < which +1; i++) {
-    segments[2*i] = 200;
-    segments[(2*i)+1] = 100;
-  }
-  
-  VibePattern pattern = {
-    .durations = segments,
-    .num_segments = 16
-  };
-  
-  vibes_enqueue_custom_pattern(pattern);  
-  
-//   w_confirm = window_create();
-//   window_set_window_handlers(w_confirm, (WindowHandlers) {
-//     .load = window_confirm_load,
-//     .unload = window_confirm_unload
-//   });
-  
-  
-//   window_set_click_config_provider(w_confirm, click_config_provider);
-//   window_stack_push(w_confirm, true);
-
-  if(!wakeup_query(s_wakeup_id, NULL)){
-    
-    int epochtime = wakeytimes[which];
-    time_t when = epochtime;
-    
-    time_t future_time = time(NULL) + 30;
-    
-    s_wakeup_id = wakeup_schedule(when, WAKEUP_REASON, s_wakeup_id);
-    persist_write_int(PERSIST_WAKEUP_ID_KEY, s_wakeup_id);
+  if(which < 6) {
+    selectedwakeup = which;
     
     
-    static char buffer2[32];
-    char* timebuffer = parse_time_t(&when);
+    uint32_t segments[16] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
     
-    snprintf(buffer2, 32, "You will be woken up at %s", timebuffer);
+    for(int i = 0; i < which +1; i++) {
+      segments[2*i] = 200;
+      segments[(2*i)+1] = 100;
+    }
     
-    text_layer_set_text(tl_message, buffer2);  
+    VibePattern pattern = {
+      .durations = segments,
+      .num_segments = 16
+    };
+    
+    vibes_enqueue_custom_pattern(pattern);  
+    
+  //   w_confirm = window_create();
+  //   window_set_window_handlers(w_confirm, (WindowHandlers) {
+  //     .load = window_confirm_load,
+  //     .unload = window_confirm_unload
+  //   });
+    
+    
+  //   window_set_click_config_provider(w_confirm, click_config_provider);
+  //   window_stack_push(w_confirm, true);
+  
+    if(!wakeup_query(s_wakeup_id, NULL)){
+      
+      int epochtime = wakeytimes[which];
+      time_t when = epochtime;
+      
+      //DEMO PURPOSES ONLY
+      time_t future_time = time(NULL) + 10;
+      s_wakeup_id = wakeup_schedule(future_time, WAKEUP_REASON, s_wakeup_id);
+      
+      // ACTUAL CODE DO NOT REMOVE!!!!! (!!!!!!)
+      //s_wakeup_id = wakeup_schedule(when, WAKEUP_REASON, s_wakeup_id);
+      
+      
+      persist_write_int(PERSIST_WAKEUP_ID_KEY, s_wakeup_id);
+      
+      
+      static char buffer2[32];
+      char* timebuffer = parse_time_t(&when);
+      
+      snprintf(buffer2, 32, "You will be woken up at %s", timebuffer);
+      
+      text_layer_set_text(tl_message, buffer2);  
+    }
+  }else{
+      if(wakeup_query(s_wakeup_id, NULL)){
+        vibes_double_pulse();
+        persist_delete(PERSIST_WAKEUP_ID_KEY);
+        wakeup_cancel_all();
+        text_layer_set_text(tl_message, "Alarms off, select another time?");
+      }
   }
   
 }
@@ -247,7 +264,7 @@ static void window_load(Window *window) {
 
     static char s_buffer[64];
     
-    snprintf(s_buffer, sizeof(s_buffer), "You are scheduled to wake up at %s, want to change that?", timebuffer);
+    snprintf(s_buffer, sizeof(s_buffer), "Scheduled to wake up at %s, change?", timebuffer);
     text_layer_set_text(tl_message, s_buffer);
   } else {
     text_layer_set_text(tl_message, "Going to sleep now? Wake up at:");
