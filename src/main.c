@@ -1,14 +1,17 @@
 #include <pebble.h>
   
-  
+#define WAKEUP_REASON 0
+#define PERSIST_WAKEUP_ID_KEY 15
   
   
 //windows and texts
-Window *w_window;
-Window *w_confirm;
-TextLayer *tl_message;
-TextLayer *tl_confirm_message;
-MenuLayer *m_time_list;
+static Window *w_window;
+static Window *w_confirm;
+static TextLayer *tl_message;
+static TextLayer *tl_confirm_message;
+static TextLayer *tl_confirm_time;
+static MenuLayer *m_time_list;
+static WakeupId s_wakeup_id;
 
 // time taken to fall asleep in seconds
 const int FALL_ASLEEP_TIME = 840;
@@ -53,6 +56,18 @@ char* parseWakeyIndex(int index) {
 
 
 ///
+/// W A K E  U P 
+/// H A N D L E R
+///
+
+static void wakeup_handler(WakeupId id, int32_t reason) {
+  //wake up event occured must do something....
+  text_layer_set_text(tl_message, "Wakey wakey!");
+  
+  persist_delete(PERSIST_WAKEUP_ID_KEY);
+}
+
+///
 /// C L I C K
 /// H A N D L E R S
 ///
@@ -92,18 +107,24 @@ static void window_confirm_load(Window *window) {
   tl_confirm_message = text_layer_create(GRect(0, 0, 144, 90));
   text_layer_set_text_color(tl_confirm_message, GColorBlack);
   
-  char cutemessage[] = "Set an alarm for 00:00XX?";
+  tl_confirm_time = text_layer_create(GRect(0,30,144,200));
+  text_layer_set_font(tl_confirm_time, FONT_KEY_GOTHIC_28_BOLD);
+
   char* buffer2 = parseWakeyIndex(selectedwakeup);
-  snprintf(cutemessage, 28, "Set an alarm for %s?", buffer2);
   
   // for some reason this text doesn't print on the screen!
-  text_layer_set_text(tl_confirm_message, cutemessage);
+  text_layer_set_text(tl_confirm_message, "Are you sure you want to wake up at:");
   layer_add_child(window_get_root_layer(window), text_layer_get_layer(tl_confirm_message));
+  printf("text layer tl_confirm_message was pushed");
+  text_layer_set_text(tl_confirm_time,buffer2);
+  layer_add_child(window_get_root_layer(window), text_layer_get_layer(tl_confirm_time));
+    printf("text layer tl_confirm_time was pushed");
 
 }
 
 static void window_confirm_unload(Window *window){
-  
+  text_layer_destroy(tl_confirm_message);
+  text_layer_destroy(tl_confirm_time);
 }
 
 
@@ -150,15 +171,26 @@ void select_click_callback(MenuLayer *menu_layer, MenuIndex *cell_index, void *c
   
   vibes_enqueue_custom_pattern(pattern);  
   
-  w_confirm = window_create();
-  window_set_window_handlers(w_confirm, (WindowHandlers) {
-    .load = window_confirm_load,
-    .unload = window_confirm_unload
-  });
+//   w_confirm = window_create();
+//   window_set_window_handlers(w_confirm, (WindowHandlers) {
+//     .load = window_confirm_load,
+//     .unload = window_confirm_unload
+//   });
   
   
-  window_set_click_config_provider(w_confirm, click_config_provider);
-  window_stack_push(w_confirm, true);
+//   window_set_click_config_provider(w_confirm, click_config_provider);
+//   window_stack_push(w_confirm, true);
+
+  if(!wakeup_query(s_wakeup_id, NULL)){
+    
+    int epochtime = wakeytimes[which];
+    time_t when = epochtime;
+    
+    wakeup_query(s_wakeup_id, &when);
+    
+    text_layer_set_text(tl_message, "You will be woken up!");  
+  }
+  
 }
 
 ///
@@ -170,7 +202,31 @@ void select_click_callback(MenuLayer *menu_layer, MenuIndex *cell_index, void *c
 //handles window stuff
 static void window_load(Window *window) {
   tl_message = text_layer_create(GRect(0, 0, 144, 40));
-  text_layer_set_text(tl_message, "Going to sleep now? Wake up at:");
+  
+  s_wakeup_id = persist_read_int(PERSIST_WAKEUP_ID_KEY );
+  
+  if( s_wakeup_id > 0 ) {
+    time_t timestamp = 0;
+    wakeup_query(s_wakeup_id, &timestamp);
+    
+
+    static struct tm* timeinfo;
+    timeinfo = localtime(&timestamp);
+  
+    char timebuffer[]= "123456879";
+    if (clock_is_24h_style() == true) {
+      strftime(timebuffer, sizeof(timebuffer), "%H:%M", timeinfo);
+    } else {
+      strftime(timebuffer, sizeof(timebuffer), "%I:%M%p", timeinfo);
+    }
+
+    static char s_buffer[64];
+    
+    snprintf(s_buffer, sizeof(s_buffer), "You are scheduled to wake up at %s, want to change that?", timebuffer);
+    text_layer_set_text(tl_message, s_buffer);
+  } else {
+    text_layer_set_text(tl_message, "Going to sleep now? Wake up at:");
+  }
   layer_add_child(window_get_root_layer(window), text_layer_get_layer(tl_message));
 
   m_time_list = menu_layer_create(GRect(0,36,144, 120));
@@ -191,6 +247,8 @@ static void window_load(Window *window) {
 
 static void window_unload(Window *window) {
     menu_layer_destroy(m_time_list);
+    text_layer_destroy(tl_message);
+
 }
 
 
@@ -211,14 +269,24 @@ void init(void) {
   });
   
   window_stack_push(w_window, true);
+  
+  wakeup_service_subscribe(wakeup_handler);
+  if(launch_reason() == APP_LAUNCH_WAKEUP) {
+    WakeupId id = 0;
+    int32_t reason = 0;
+    
+    //handle the wake up
+    wakeup_get_launch_event(&id, &reason);
+    wakeup_handler(id, reason);
+  }
 }
 
 //deinitialization handler
 void deinit(void) {
-  text_layer_destroy(tl_message);
-  text_layer_destroy(tl_confirm_message);
+
   window_destroy(w_window);
   window_destroy(w_confirm);
+
 }
 
 
