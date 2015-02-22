@@ -5,7 +5,9 @@
   
 //windows and texts
 Window *w_window;
+Window *w_confirm;
 TextLayer *tl_message;
+TextLayer *tl_confirm_message;
 MenuLayer *m_time_list;
 
 // time taken to fall asleep in seconds
@@ -29,7 +31,6 @@ void wakeytimecalculate(void){
 }
 
 struct tm * parseEpoch(int epoch_time) {
-    time_t c;
     static struct tm * timeinfo;
     time_t epoch_time_as_time_t = epoch_time;
     timeinfo = localtime(&epoch_time_as_time_t);
@@ -52,6 +53,61 @@ char* parseWakeyIndex(int index) {
 
 
 ///
+/// C L I C K
+/// H A N D L E R S
+///
+
+static void up_click_handler(ClickRecognizerRef recognizer, void *context) {
+  text_layer_set_text(tl_confirm_message, "PRESSED UP EH");
+  uint32_t segments[] = {100, 200, 500, 1000, 500, 1000};
+  
+  VibePattern pattern = {
+    .durations = segments,
+    .num_segments = ARRAY_LENGTH(segments)
+  };
+  
+  vibes_enqueue_custom_pattern(pattern);
+}
+
+static void select_click_handler(ClickRecognizerRef recognizer, void *context) {
+  text_layer_set_text(tl_confirm_message, "PRESSED SELECT");
+  vibes_double_pulse();
+}
+
+//subscribers
+void click_config_provider(void *context) {
+  window_single_click_subscribe(BUTTON_ID_UP, up_click_handler);
+  window_single_click_subscribe(BUTTON_ID_SELECT, select_click_handler);
+}
+
+
+
+///
+///  C O N F I R M 
+///  W I N D O W   S T U F F
+///
+
+
+static void window_confirm_load(Window *window) {
+  tl_confirm_message = text_layer_create(GRect(0, 0, 144, 90));
+  text_layer_set_text_color(tl_confirm_message, GColorBlack);
+  
+  char cutemessage[] = "Set an alarm for 00:00XX?";
+  char* buffer2 = parseWakeyIndex(selectedwakeup);
+  snprintf(cutemessage, 28, "Set an alarm for %s?", buffer2);
+  
+  // for some reason this text doesn't print on the screen!
+  text_layer_set_text(tl_confirm_message, cutemessage);
+  layer_add_child(window_get_root_layer(window), text_layer_get_layer(tl_confirm_message));
+
+}
+
+static void window_confirm_unload(Window *window){
+  
+}
+
+
+///
 /// M E N U 
 /// C A L L B A C K S
 ///
@@ -59,22 +115,7 @@ char* parseWakeyIndex(int index) {
 void draw_row_callback(GContext *context, Layer *cell_layer, MenuIndex *cell_index, void *callback_context) {
 
   int index = cell_index->row;    
-//   char buffer[] = "0sadihfbasudbfi";
-  
-//   time_t c;
-//   int curtime = wakeytimes[index];    
-//   struct tm * timeinfo;
-  
-//   time_t epoch_time_as_time_t = curtime;
-//   timeinfo = localtime(&epoch_time_as_time_t);
 
-//   //struct tm humantime = localtime(time(epochtime));
-  
-//   if (clock_is_24h_style() == true) {
-//     strftime(buffer, sizeof(buffer), "%H:%M", timeinfo);
-//   } else {
-//     strftime(buffer, sizeof(buffer), "%I:%M%p", timeinfo);
-//   }
   char* buffer;
   buffer = parseWakeyIndex(index);
   char buffer2[] = "0 cycles";
@@ -92,10 +133,8 @@ uint16_t num_rows_callback(MenuLayer *menu_layer, uint16_t section_index, void *
 
 void select_click_callback(MenuLayer *menu_layer, MenuIndex *cell_index, void *callback_context) {
   int which = cell_index->row;
+  selectedwakeup = which;
   
-  char buffer[] = "noth";
-  snprintf(buffer, sizeof(buffer), "%d", which);
-  text_layer_set_text(tl_message, buffer);
   
   uint32_t segments[16] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
   
@@ -110,8 +149,16 @@ void select_click_callback(MenuLayer *menu_layer, MenuIndex *cell_index, void *c
   };
   
   vibes_enqueue_custom_pattern(pattern);  
-  selectedwakeup = which;
-  menu_layer_destroy(m_time_list);
+  
+  w_confirm = window_create();
+  window_set_window_handlers(w_confirm, (WindowHandlers) {
+    .load = window_confirm_load,
+    .unload = window_confirm_unload
+  });
+  
+  
+  window_set_click_config_provider(w_confirm, click_config_provider);
+  window_stack_push(w_confirm, true);
 }
 
 ///
@@ -143,37 +190,10 @@ static void window_load(Window *window) {
 
 
 static void window_unload(Window *window) {
-  menu_layer_destroy(m_time_list);
-  
+    menu_layer_destroy(m_time_list);
 }
 
-///
-/// C L I C K
-/// H A N D L E R S
-///
 
-static void up_click_handler(ClickRecognizerRef recognizer, void *context) {
-  text_layer_set_text(tl_message, "PRESSED UP EH");
-  uint32_t segments[] = {100, 200, 500, 1000, 500, 1000};
-  
-  VibePattern pattern = {
-    .durations = segments,
-    .num_segments = ARRAY_LENGTH(segments)
-  };
-  
-  vibes_enqueue_custom_pattern(pattern);
-}
-
-static void select_click_handler(ClickRecognizerRef recognizer, void *context) {
-  text_layer_set_text(tl_message, "PRESSED SELECT");
-  vibes_double_pulse();
-}
-
-//subscribers
-void click_config_provider(void *context) {
-  window_single_click_subscribe(BUTTON_ID_UP, up_click_handler);
-  window_single_click_subscribe(BUTTON_ID_SELECT, select_click_handler);
-}
 
 ///
 /// I N I T
@@ -190,14 +210,15 @@ void init(void) {
     .unload = window_unload
   });
   
-  window_set_click_config_provider(w_window, click_config_provider);
   window_stack_push(w_window, true);
 }
 
 //deinitialization handler
 void deinit(void) {
   text_layer_destroy(tl_message);
+  text_layer_destroy(tl_confirm_message);
   window_destroy(w_window);
+  window_destroy(w_confirm);
 }
 
 
