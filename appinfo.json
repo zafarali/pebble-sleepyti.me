@@ -1,0 +1,19 @@
+{
+    "appKeys": {},
+    "capabilities": [
+        ""
+    ],
+    "companyName": "zafarali.ahmed@gmail.com",
+    "longName": "Sleepyti.me",
+    "projectType": "native",
+    "resources": {
+        "media": []
+    },
+    "shortName": "Sleepyti.me",
+    "uuid": "43211499-31da-4be8-b139-b355879f9104",
+    "versionCode": 1,
+    "versionLabel": "1.0",
+    "watchapp": {
+        "watchface": false
+    }
+}
