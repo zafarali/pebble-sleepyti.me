@@ -82,7 +82,7 @@ static void wakeup_handler(WakeupId id, int32_t reason) {
     
   
   
-    uint32_t segments[] = {200,100,200,100,200,100,200,100,200,100,200,100};
+    uint32_t segments[] = {200,0,500,0,500};
   
     
     VibePattern pattern = {
@@ -124,37 +124,6 @@ void click_config_provider(void *context) {
   window_single_click_subscribe(BUTTON_ID_SELECT, select_click_handler);
 }
 
-
-
-///
-///  C O N F I R M 
-///  W I N D O W   S T U F F
-///
-
-
-static void window_confirm_load(Window *window) {
-  tl_confirm_message = text_layer_create(GRect(0, 0, 144, 90));
-  text_layer_set_text_color(tl_confirm_message, GColorBlack);
-  
-  tl_confirm_time = text_layer_create(GRect(0,30,144,200));
-  text_layer_set_font(tl_confirm_time, FONT_KEY_GOTHIC_28_BOLD);
-
-  char* buffer2 = parseWakeyIndex(selectedwakeup);
-  
-  // for some reason this text doesn't print on the screen!
-  text_layer_set_text(tl_confirm_message, "Are you sure you want to wake up at:");
-  layer_add_child(window_get_root_layer(window), text_layer_get_layer(tl_confirm_message));
-  printf("text layer tl_confirm_message was pushed");
-  text_layer_set_text(tl_confirm_time,buffer2);
-  layer_add_child(window_get_root_layer(window), text_layer_get_layer(tl_confirm_time));
-    printf("text layer tl_confirm_time was pushed");
-
-}
-
-static void window_confirm_unload(Window *window){
-  text_layer_destroy(tl_confirm_message);
-  text_layer_destroy(tl_confirm_time);
-}
 
 
 ///
@@ -219,12 +188,12 @@ void select_click_callback(MenuLayer *menu_layer, MenuIndex *cell_index, void *c
       int epochtime = wakeytimes[which];
       time_t when = epochtime;
       
-      //DEMO PURPOSES ONLY
-      time_t future_time = time(NULL) + 10;
-      s_wakeup_id = wakeup_schedule(future_time, WAKEUP_REASON, s_wakeup_id);
+//       //DEMO PURPOSES ONLY
+//       time_t future_time = time(NULL) + 10;
+//       s_wakeup_id = wakeup_schedule(future_time, WAKEUP_REASON, s_wakeup_id);
       
       // ACTUAL CODE DO NOT REMOVE!!!!! (!!!!!!)
-      //s_wakeup_id = wakeup_schedule(when, WAKEUP_REASON, s_wakeup_id);
+      s_wakeup_id = wakeup_schedule(when, WAKEUP_REASON, s_wakeup_id);
       
       
       persist_write_int(PERSIST_WAKEUP_ID_KEY, s_wakeup_id);
@@ -264,17 +233,10 @@ static void window_load(Window *window) {
     printf("wakeupid exists");
     time_t timestamp = 0;
     wakeup_query(s_wakeup_id, &timestamp);
-    
-
-    static struct tm* timeinfo;
-    timeinfo = localtime(&timestamp);
   
-    char timebuffer[]= "123456879";
-    if (clock_is_24h_style() == true) {
-      strftime(timebuffer, sizeof(timebuffer), "%H:%M", timeinfo);
-    } else {
-      strftime(timebuffer, sizeof(timebuffer), "%I:%M%p", timeinfo);
-    }
+
+    char* timebuffer = parse_time_t(&timestamp);
+
 
     static char s_buffer[64];
     
